@@ -272,13 +272,14 @@ public class BookListActivity extends Activity {
                 Log.e(Constants.log_tag, "book name: " + name);
                 InputStream epubInputStream = am.open("epub/" + name);
                 Book book = (new EpubReader()).readEpub(epubInputStream);
-
                 epubMap.put("itemback", R.drawable.itemback);
                 epubMap.put("ItemImage", R.drawable.cover);
-                epubMap.put("BookName", book.getTitle());
+                epubMap.put("epubImage", book.getCoverImage());
+                // 书籍图片缺少时用BookName填充
+                // epubMap.put("BookName", book.getTitle());
                 epubMap.put("ItemTitle", book.getTitle());
                 epubMap.put("ItemTitle1", book.getMetadata().getAuthors().get(0).toString());
-                epubMap.put("LastImage", "本地导入");
+                // epubMap.put("LastImage", "本地导入");
                 epubMap.put("path", "/assert/epub/" + name);
                 epubMap.put("com", "1");
                 mapList.add(epubMap);

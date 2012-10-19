@@ -1,9 +1,13 @@
 package com.danbook.adapter;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import nl.siegmann.epublib.domain.Resource;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -63,11 +67,22 @@ public class LocAdapter extends BaseAdapter {
             itemback.setImageResource((Integer) (listItem.get(p).get("itemback")));
             itemback.setScaleType(ScaleType.CENTER_CROP);
         }
+        if (listItem.get(p).get("epubImage") != null) {
+            Bitmap coverImage = null;
+            try {
+                coverImage = BitmapFactory.decodeStream(((Resource) listItem.get(p).get("epubImage")).getInputStream());
+            }
+            catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            ItemImage.setImageBitmap(coverImage);
+            itemback.setScaleType(ScaleType.CENTER_CROP);
+        }
         bookName.setText((String) (listItem.get(p).get("BookName")));
         ItemTitle.setText((String) (listItem.get(p).get("ItemTitle")));
         ItemTitle1.setText((String) (listItem.get(p).get("ItemTitle1")));
         last.setText((String) (listItem.get(p).get("LastImage")));
         return view;
     }
-
 }
