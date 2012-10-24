@@ -46,6 +46,7 @@ import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.danbook.EpubRead;
 import com.danbook.R;
 import com.danbook.Read;
 import com.danbook.adapter.LocAdapter;
@@ -147,6 +148,7 @@ public class BookListActivity extends Activity {
     private boolean isInit = false;
     private Intent it;
     private ListView list;
+
     private ArrayList<HashMap<String, Object>> listItem = null;
     private SimpleAdapter listItemAdapter = null;
     ListView listView;
@@ -280,8 +282,9 @@ public class BookListActivity extends Activity {
                 epubMap.put("ItemTitle", book.getTitle());
                 epubMap.put("ItemTitle1", book.getMetadata().getAuthors().get(0).toString());
                 // epubMap.put("LastImage", "本地导入");
-                epubMap.put("path", "/assert/epub/" + name);
+                epubMap.put("path", "assets/epub/" + name);
                 epubMap.put("com", "1");
+                epubMap.put(Constants.book_type, Constants.book_type_epub);
                 mapList.add(epubMap);
             }
         }
@@ -352,6 +355,7 @@ public class BookListActivity extends Activity {
                 map.put("LastImage", "推荐书目");
                 map.put("path", file1.getPath());
                 map.put("com", 0 + file1.getName());// 单独用于排序
+                map.put(Constants.book_type, Constants.book_type_txt);
                 listItem.add(map);
             }
             else {
@@ -375,6 +379,7 @@ public class BookListActivity extends Activity {
                 map.put("LastImage", "本地导入");
                 map.put("path", file1.getPath());
                 map.put("com", "1");
+                map.put(Constants.book_type, Constants.book_type_txt);
                 listItem.add(map);
             }
         }
@@ -541,11 +546,13 @@ public class BookListActivity extends Activity {
                 try {
                     showProgressDialog("正在加载电子书...");
                     // 修改数据库中图书的最近阅读状态为1
-                    String s = (String) listItem.get(arg2).get("path");
+                    String path = (String) listItem.get(arg2).get("path");
                     SQLiteDatabase db = localbook.getWritableDatabase();
 
-                    File f = new File(s);
-                    if (f.length() == 0) {
+                    File f = new File(path);
+                    Log.e(TAG, "bookpath: " + path);
+                    String bookType = (String) listItem.get(arg2).get(Constants.book_type);
+                    if (f.length() == 0 && (!Constants.book_type_epub.equals(bookType))) {
                         Toast.makeText(BookListActivity.this, "该文件为空文件", Toast.LENGTH_SHORT).show();
                         if (mpDialog != null) {
                             mpDialog.dismiss();
@@ -554,11 +561,16 @@ public class BookListActivity extends Activity {
                     else {
                         ContentValues values = new ContentValues();
                         values.put("now", 1);// key为字段名，value为值
-                        db.update("localbook", values, "path=?", new String[]{s});// 修改状态为图书被已被导入
+                        db.update("localbook", values, "path=?", new String[]{path});// 修改状态为图书被已被导入
                         db.close();
-                        String path = (String) listItem.get(arg2).get("path");
                         it = new Intent();
-                        it.setClass(BookListActivity.this, Read.class);
+                        Log.e(TAG, "booktype: " + bookType);
+                        if (Constants.book_type_epub.equals(bookType)) {
+                            it.setClass(BookListActivity.this, EpubRead.class);
+                        }
+                        else {
+                            it.setClass(BookListActivity.this, Read.class);
+                        }
                         it.putExtra("aaa", path);
                         startActivity(it);
                     }

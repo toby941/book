@@ -56,6 +56,11 @@
             android:screenOrientation="portrait" >
         </activity>
         <activity
+            android:name=".EpubRead"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
             android:name="com.danbook.activity.InActivity"
             android:screenOrientation="portrait" >
         </activity>

@@ -45,7 +45,7 @@ import com.danbook.vo.MarkVo;
 
 public class Read extends Activity implements OnClickListener, OnSeekBarChangeListener {
 
-    private static final String TAG = "Read2";
+    private static final String TAG = "Read";
     private static int begin = 0;// 记录的书籍开始位置
     public static Canvas mCurPageCanvas, mNextPageCanvas;
     private static String word = "";// 记录当前页面的文字
@@ -500,7 +500,7 @@ public class Read extends Activity implements OnClickListener, OnSeekBarChangeLi
     }
 
     /**
-     * 关闭55个弹出pop
+     * 关闭5个弹出pop
      */
     public void popDismiss() {
         mToolpop.dismiss();
