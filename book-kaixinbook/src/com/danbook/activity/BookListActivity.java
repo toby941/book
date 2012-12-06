@@ -3,6 +3,7 @@ package com.danbook.activity;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -92,8 +93,34 @@ public class BookListActivity extends Activity {
                         e.printStackTrace();
                     }
                 }
+                // copy epub
+                AssetManager am = getAssets();
+                try {
+                    String fileNames[] = am.list("epubs");
+                    for (String name : fileNames) {
+                        FileOutputStream out = new FileOutputStream(path + "/" + name);
+                        InputStream epubInputStream = am.open("epubs/" + name);
+                        BufferedInputStream bufferedIn = new BufferedInputStream(epubInputStream);
+                        BufferedOutputStream bufferedOut = new BufferedOutputStream(out);
+                        byte[] data = new byte[2048];
+                        int length = 0;
+                        while ((length = bufferedIn.read(data)) != -1) {
+                            bufferedOut.write(data, 0, length);
+                        }
+                        // 将缓冲区中的数据全部写出
+                        bufferedOut.flush();
+                        // 关闭流
+                        bufferedIn.close();
+                        bufferedOut.close();
+                    }
+                }
+                catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
 
                 ArrayList<HashMap<String, String>> insertList = new ArrayList<HashMap<String, String>>();
+                ArrayList<HashMap<String, String>> insertEpubList = new ArrayList<HashMap<String, String>>();
                 File[] f1 = path.listFiles();
                 int len = f1.length;
                 for (int i = 0; i < len; i++) {
@@ -104,11 +131,17 @@ public class BookListActivity extends Activity {
                             insertMap.put("path", f1[i].toString());
                             insertList.add(insertMap);
                         }
+                        else if (f1[i].toString().contains(".epub")) {
+                            HashMap<String, String> insertMap = new HashMap<String, String>();
+                            insertMap.put("parent", f1[i].getParent());
+                            insertMap.put("path", f1[i].toString());
+                            insertEpubList.add(insertMap);
+                        }
                     }
                 }
                 SQLiteDatabase db = localbook.getWritableDatabase();
                 db.delete("localbook", "type='" + 2 + "'", null);
-
+                db.delete("localbook", "type='" + 3 + "'", null);
                 for (int i = 0; i < insertList.size(); i++) {
                     try {
                         if (insertList.get(i) != null) {
@@ -117,6 +150,25 @@ public class BookListActivity extends Activity {
                             String sql1 =
                                     "insert into " + "localbook" + " (parent,path" + ", type" + ",now,ready) values('"
                                             + s + "','" + s1 + "',2,0,null" + ");";
+                            db.execSQL(sql1);
+                        }
+                    }
+                    catch (SQLException e) {
+                        Log.e(TAG, "setApprove SQLException", e);
+                    }
+                    catch (Exception e) {
+                        Log.e(TAG, "setApprove Exception", e);
+                    }
+                }
+
+                for (int i = 0; i < insertEpubList.size(); i++) {
+                    try {
+                        if (insertEpubList.get(i) != null) {
+                            String s = insertEpubList.get(i).get("parent");
+                            String s1 = insertEpubList.get(i).get("path");
+                            String sql1 =
+                                    "insert into " + "localbook" + " (parent,path" + ", type" + ",now,ready) values('"
+                                            + s + "','" + s1 + "',3,0,null" + ");";
                             db.execSQL(sql1);
                         }
                     }
@@ -142,6 +194,52 @@ public class BookListActivity extends Activity {
         }
     }
 
+    /**
+     * 初始化epub信息
+     */
+    public ArrayList<HashMap<String, Object>> initEpub() {
+        SQLiteDatabase db = localbook.getReadableDatabase();
+        String col[] = {"path"};
+        Cursor cur = db.query("localbook", col, "type=3", null, null, null, null);
+        Integer num = cur.getCount();
+        ArrayList<String> arraylist = new ArrayList<String>();
+        while (cur.moveToNext()) {
+            String s = cur.getString(cur.getColumnIndex("path"));
+            arraylist.add(s);
+        }
+        db.close();
+        cur.close();
+
+        ArrayList<HashMap<String, Object>> mapList = new ArrayList<HashMap<String, Object>>();
+        try {
+            AssetManager am = getAssets();
+            String fileNames[] = am.list("epubs");
+            for (String path : arraylist) {
+                HashMap<String, Object> epubMap = new HashMap<String, Object>();
+
+                Log.e(Constants.log_tag, "book path: " + path);
+                File file1 = new File(path);
+
+                Book book = (new EpubReader()).readEpub(new FileInputStream(file1));
+                epubMap.put("itemback", R.drawable.itemback);
+                epubMap.put("ItemImage", R.drawable.cover);
+                epubMap.put("epubImage", book.getCoverImage());
+                // 书籍图片缺少时用BookName填充
+                // epubMap.put("BookName", book.getTitle());
+                epubMap.put("ItemTitle", book.getTitle());
+                epubMap.put("ItemTitle1", book.getMetadata().getAuthors().get(0).toString());
+                // epubMap.put("LastImage", "本地导入");
+                epubMap.put("path", path);
+                epubMap.put("com", "1");
+                epubMap.put(Constants.book_type, Constants.book_type_epub);
+                mapList.add(epubMap);
+            }
+        }
+        catch (IOException e) {
+            Log.e(Constants.log_tag, "error", e);
+        }
+        return mapList;
+    }
     private static final String TAG = "MainActivity";
     // private Boolean a = true, b = false, c = false;
     private SharedPreferences.Editor editor;
@@ -258,40 +356,6 @@ public class BookListActivity extends Activity {
             sdDir = Environment.getExternalStorageDirectory();// 获取跟目录
         }
         return sdDir.toString();
-    }
-
-    /**
-     * 初始化epub信息
-     */
-    public ArrayList<HashMap<String, Object>> initEpub() {
-        ArrayList<HashMap<String, Object>> mapList = new ArrayList<HashMap<String, Object>>();
-        try {
-            AssetManager am = getAssets();
-            String fileNames[] = am.list("epub");
-            for (String name : fileNames) {
-                HashMap<String, Object> epubMap = new HashMap<String, Object>();
-
-                Log.e(Constants.log_tag, "book name: " + name);
-                InputStream epubInputStream = am.open("epub/" + name);
-                Book book = (new EpubReader()).readEpub(epubInputStream);
-                epubMap.put("itemback", R.drawable.itemback);
-                epubMap.put("ItemImage", R.drawable.cover);
-                epubMap.put("epubImage", book.getCoverImage());
-                // 书籍图片缺少时用BookName填充
-                // epubMap.put("BookName", book.getTitle());
-                epubMap.put("ItemTitle", book.getTitle());
-                epubMap.put("ItemTitle1", book.getMetadata().getAuthors().get(0).toString());
-                // epubMap.put("LastImage", "本地导入");
-                epubMap.put("path", "assets/epub/" + name);
-                epubMap.put("com", "1");
-                epubMap.put(Constants.book_type, Constants.book_type_epub);
-                mapList.add(epubMap);
-            }
-        }
-        catch (IOException e) {
-            Log.e(Constants.log_tag, "error", e);
-        }
-        return mapList;
     }
 
     /**

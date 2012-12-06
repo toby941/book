@@ -125,6 +125,7 @@ public class EpubPageFactory {
     @SuppressWarnings("resource")
     public void openbook(String strFilePath, int begin) throws IOException {
         Log.e(TAG, "epub file path " + strFilePath);
+
         book_file = new File(strFilePath);
         long lLen = book_file.length();
         Log.e(TAG, "epub file length " + lLen);

@@ -70,11 +70,26 @@ public class LocAdapter extends BaseAdapter {
         if (listItem.get(p).get("epubImage") != null) {
             Bitmap coverImage = null;
             try {
-                coverImage = BitmapFactory.decodeStream(((Resource) listItem.get(p).get("epubImage")).getInputStream());
+                BitmapFactory.Options options = new BitmapFactory.Options();
+                options.inJustDecodeBounds = true;
+                Resource r = ((Resource) listItem.get(p).get("epubImage"));
+                // 获取这个图片的宽和高
+                coverImage = BitmapFactory.decodeStream(r.getInputStream(), null, options);// 此时返回bm为空
+                options.inJustDecodeBounds = false;
+                // 计算缩放比
+                int be = (int) (options.outHeight / (float) 200);
+                if (be <= 0)
+                    be = 1;
+                options.inSampleSize = be;
+                options.inJustDecodeBounds = false;
+                coverImage = BitmapFactory.decodeStream(r.getInputStream(), null, options);
+
             }
             catch (IOException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
+            }
+            catch (OutOfMemoryError err) {
+                err.printStackTrace();
             }
             ItemImage.setImageBitmap(coverImage);
             itemback.setScaleType(ScaleType.CENTER_CROP);

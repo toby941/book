@@ -10,5 +10,8 @@
     <string-array name="bookauthor">
         <item>未知</item>
     </string-array>
+    <string-array name="epub">
+        <item>1.epub</item>
+    </string-array>
 
 </resources>
